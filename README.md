@@ -1,7 +1,7 @@
 # segmenteveryzircon
 
 <p align="center">
-<img src="https://github.com/owachob/segmenteveryzircon/blob/main/example_zircons.png" width="300">
+<img src="https://github.com/owachob/segmenteveryzircon/blob/main/example_zircons.png">
 </p>
 
 ## Description
