@@ -1,6 +1,6 @@
 # segmenteveryzircon
 
-<img src= "https://github.com/owachob/segmenteveryzircon/blob/main/example_segmentation_of_mount.png">
+<img src= "https://github.com/owachob/segmenteveryzircon/blob/main/example_segmentation_of_mount.png" height = 300>
 
 ## Description
 
