@@ -10,10 +10,40 @@ segmenteveryzircon is a python-based module aimed to extract zircon geometries f
 
 Due to the nature of these machine learning models, segmenteveryzircon will likely not produce perfect results automatically. That is why the package includes a human-in-the-loop workflow to allow users to add and delete grains after the initial model output.
 
+## Requirements
+
+- numpy
+- scipy
+- pandas
+- matplotlib
+- scikit-image
+- scikit-learn
+- tqdm
+- networkx
+- shapely
+- geopandas
+- rtree
+- rasterio
+- tifffile
+- seaborn
+- pyqt5
+- tensorflow
+- opencv-python
+- pillow
+- torch
+- torchvision
+- segment-anything
+- segmenteverygrain
+
 ## Getting Started
 
+To begin creating grain polygons from images, see the [1_create_polygons_and_masks.ipynb](https://github.com/owachob/segmenteveryzircon/blob/main/1_create_polygons_and_masks.ipynb) notebook to see how to use the model and interact with the initial model output.
 
+Segmentation run time will be dependent upon image size and computer resources. Please consider [downsampling](https://visionbook.mit.edu/upsamplig_downsampling_2.html) images. 
 
+## Acknowledgements
+
+This work is in collaboration with Daniel Stockli, Zoltan Sylvester, and Matthew Malkowski. Special thanks to Daniel Ruiz-Arriaga, Sandra Juarez-Zuniga, and Rachel Kramer for training images. Thank you to Rowan Martindale and Lisa Stockli for the imaging resources and helpful discussions.
 
 ## License
 
