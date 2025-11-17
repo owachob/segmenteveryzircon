@@ -43,7 +43,7 @@ Segmentation run time will be dependent upon image size and computer resources. 
 
 ## Acknowledgements
 
-This work is in collaboration with Daniel Stockli, Zoltan Sylvester, and Matthew Malkowski. Special thanks to Daniel Ruiz-Arriaga, Sandra Juarez-Zuniga, and Rachel Kramer for training images. Thank you to Rowan Martindale and Lisa Stockli for the imaging resources and helpful discussions.
+This work is in collaboration with Daniel Stockli, Zoltan Sylvester, and Matthew Malkowski. Special thanks to Daniel Ruiz-Arriaga, Sandra Juarez-Zuniga, and Rachel Kramer for training images. Thank you to Rowan Martindale and Lisa Stockli for the imaging resources and helpful discussions. This work was made possible by the [UTChron Lab](https://www.jsg.utexas.edu/utchron-lab/) at the Jackson School of Geosciences, the University of Texas at Austin.
 
 ## License
 
