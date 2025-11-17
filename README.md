@@ -10,10 +10,11 @@ segmenteveryzircon is a python-based module aimed to extract zircon geometries f
 
 Due to the nature of these machine learning models, segmenteveryzircon will likely not produce perfect results automatically. That is why the package includes a human-in-the-loop workflow to allow users to add and delete grains after the initial model output.
 
+## Getting Started
 
 
 
 
 ## License
 
-segmenteveryzircon is licensed under the [Apache License 2.0](https://github.com/owachob/segmenteveryzircon/blob/master/LICENSE.txt).
+segmenteveryzircon is licensed under the [Apache License 2.0](https://github.com/owachob/segmenteveryzircon/blob/main/LICENSE).
