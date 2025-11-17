@@ -35,6 +35,28 @@ Due to the nature of these machine learning models, segmenteveryzircon will like
 - segment-anything
 - segmenteverygrain
 
+## Installation
+
+Clone the repository
+```
+git clone https://github.com/owachob/segmenteveryzircon.git
+```
+
+Set up the `segmenteveryzircon` environment with conda (Windows):
+```
+conda env create -f segmenteveryzircon/environment.yml
+```
+
+Set up the `segmenteveryzircon` environment with conda (Mac):
+```
+conda env create -f segmenteveryzircon/environment_macos.yml
+```
+
+Activate environment:
+```
+conda activate segmenteveryzircon
+```
+
 ## Getting Started
 
 To begin creating grain polygons from images, see the [1_create_polygons_and_masks.ipynb](https://github.com/owachob/segmenteveryzircon/blob/main/1_create_polygons_and_masks.ipynb) notebook to see how to use the model and interact with the initial model output.
