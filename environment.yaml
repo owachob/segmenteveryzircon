@@ -1,0 +1,32 @@
+name: segmenteveryzircon
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - scikit-image
+  - scikit-learn
+  - tqdm
+  - networkx
+  - shapely
+  - geopandas
+  - rtree
+  - jupyterlab
+  - rasterio
+  - tifffile
+  - seaborn
+  - pyqt
+  - tensorflow
+  - pip
+  - pip:
+      - opencv-python
+      - pillow
+      - torch
+      - torchvision
+      - segment-anything
+      - segmenteverygrain
