@@ -364,3 +364,41 @@ def show_grain_overlay(grain_ID, grain_data, label_image, original_image, pad=50
     plt.title(f"Grain {grain_ID} Overlay (Zoomed In)")
     plt.axis('off')
     plt.show()
+ 
+def load_scancsv(csv_file):
+    """
+    Load the CSV containing the spot names and coordinates.
+    Returns a DataFrame with the necessary information.
+    """
+    df = pd.read_csv(csv_file, sep=',', encoding='ISO-8859-1')
+    df[['x', 'y', 'z']] = df['Vertex List'].str.split(',', expand=True)
+    df['x'] = pd.to_numeric(df['x'])
+    df['y'] = pd.to_numeric(df['y'])
+    df['z'] = pd.to_numeric(df['z'])
+    return df   
+
+def load_image_post_ablation(image_file):
+    """
+    Load the image you used for the segmentation.
+    """
+    image = cv2.imread(image_file)
+    return image
+
+def plot_spots_on_image(image, df):
+    """
+    Plot the spots from the scancsv file coordinates on the image as a starting point with red dots.
+    """
+    image_copy = image.copy()
+
+    for i, row in df.iterrows():
+        x, y = int(row['x']), int(row['y'])
+        print(f"Plotting point at ({x}, {y})")  # Debugging line to check the coordinates
+        
+        # Draw the spot as a red dot and label it with the spot name
+        cv2.circle(image_copy, (x, y), 10, (255, 0, 0), -1)  # Red dot (BGR format)
+        cv2.putText(image_copy, row['Description'], (x + 10, y + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+    
+    # Convert image from BGR (OpenCV) to RGB (for Matplotlib)
+    image_rgb = cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)
+    return image_rgb
