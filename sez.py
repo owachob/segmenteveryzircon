@@ -44,7 +44,24 @@ from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
 
 
 def plot_image_w_colorful_grains(image, all_grains, ax, cmap='viridis', plot_image=True, im_alpha=1.0):
+    """Plotting segmentation image with colorful zircon grains. From Sylvester et. al's segmenteverygrain
+    Parameters
+    ----------
+    image : numpy.ndarray
+        The input image to be plotted.
+    all_grains : list
+        A list of shapely Polygon objects representing the grain masks.
+    ax : matplotlib.axes.Axes
+        The axes object on which to plot the image and grain masks.
+    cmap : str, optional
+        The name of the colormap to use for coloring the grain masks. Default is 'viridis'.
+    plot_image : bool, optional
+        Whether to plot the image. Default is True.
 
+    Returns
+    -------
+    None
+    """
     cmap = plt.cm.get_cmap(cmap)
     num_colors = len(all_grains)
     color_indices = np.random.randint(0, cmap.N, num_colors)
@@ -67,10 +84,7 @@ def plot_image_w_colorful_grains(image, all_grains, ax, cmap='viridis', plot_ima
 
 def plot_grains(fname, all_grains, step, cmap='Paired', figsize=(15, 10),
                 save=True, show=True, dpi=300):
-    from pathlib import Path
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from keras.utils import load_img
+   
 
     fname = Path(fname)
     image = np.array(load_img(fname))
@@ -166,10 +180,30 @@ def create_metadata_table(image_fname, final_n, model_fname, save_csv=False):
 
 def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
     """
-    Splits image and mask data into training, validation, and test datasets,
-    automatically matching images and masks even if extensions differ.
+    Splits image and mask data into training, validation, and test datasets, with 
+    optional augmentation. Adapted from Sylvester et al.'s segmenteverygrain to 
+    include compatibility with images in various 
+    formats outside of .png.
+
+    Parameters
+    ----------
+    image_dir : str
+        Directory containing the image files.
+    mask_dir : str
+        Directory containing the mask files.
+    augmentation : bool, optional
+        If True, applies data augmentation to the training dataset (default is True).
+
+    Returns
+    -------
+    train_dataset : tf.data.Dataset
+        TensorFlow dataset for training.
+    val_dataset : tf.data.Dataset
+        TensorFlow dataset for validation.
+    test_dataset : tf.data.Dataset
+        TensorFlow dataset for testing.
     """
-    import os
+    
     # Allow multiple formats
     valid_ext = ('*.png', '*.jpg', '*.jpeg', '*.tif', '*.tiff')
 
@@ -369,6 +403,17 @@ def load_scancsv(csv_file):
     """
     Load the CSV containing the spot names and coordinates.
     Returns a DataFrame with the necessary information.
+    
+    Parameters
+    ----------
+    csv_file: str
+        Path to scancsv file.
+    
+    Returns
+    ----------
+    df: pandas.DataFrame
+        Dataframe of the scancsv file.
+
     """
     df = pd.read_csv(csv_file, sep=',', encoding='ISO-8859-1')
     df[['x', 'y', 'z']] = df['Vertex List'].str.split(',', expand=True)
@@ -380,6 +425,16 @@ def load_scancsv(csv_file):
 def load_image_post_ablation(image_file):
     """
     Load the image you used for the segmentation.
+    
+    Parameters
+    ----------
+    image_file: str
+        Path of image file.
+    
+    Returns
+    ----------
+    image: 
+        loaded image of the path that was specified.
     """
     image = cv2.imread(image_file)
     return image
@@ -387,7 +442,19 @@ def load_image_post_ablation(image_file):
 def plot_spots_on_image(image, df):
     """
     Plot the spots from the scancsv file coordinates on the image as a starting point with red dots.
+    
+    Parameters
+    ----------
+    image: 
+        Loaded image.
+    df: pandas.DataFrame
+        dataframe containing the ablation coordinates from the scancsv file. 
+    Returns
+    ----------
+    image_rgb: 
+        loaded image of the path that was specified in RGB.
     """
+    
     image_copy = image.copy()
 
     for i, row in df.iterrows():
