@@ -42,14 +42,9 @@ Clone the repository
 git clone https://github.com/owachob/segmenteveryzircon.git
 ```
 
-Set up the `segmenteveryzircon` environment with conda (Windows):
+Set up the `segmenteveryzircon` environment with conda:
 ```
 conda env create -f segmenteveryzircon/environment.yml
-```
-
-Set up the `segmenteveryzircon` environment with conda (Mac):
-```
-conda env create -f segmenteveryzircon/environment_macos.yml
 ```
 
 Activate environment:
