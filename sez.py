@@ -55,49 +55,53 @@ def plot_image_w_colorful_grains(
     cmap='viridis',
     plot_image=True,
     im_alpha=1.0,
-    random_colors=False,
+    use_tqdm=False,
 ):
     """
-    Fast plotting of grain polygons over an image using PolyCollection.
+    EXACT original behavior:
+    - random color selection from colormap
+    - polygon-by-polygon plotting
+    - 0.5 alpha
+    - black edges
+    - undistorted background image
+    - optional tqdm progress bar
     """
 
-    # --- Axes handling ---
+    # Optional tqdm
+    if use_tqdm:
+        from tqdm import trange
+        iterator = trange(len(all_grains), desc="Plotting grains")
+    else:
+        iterator = range(len(all_grains))
+
     if ax is None:
         _, ax = plt.subplots()
 
-   
+    # Random colors like original
+    cmap_obj = plt.cm.get_cmap(cmap)
+    num_colors = len(all_grains)
+    color_indices = np.random.randint(0, cmap_obj.N, num_colors)
+    colors = [cmap_obj(i) for i in color_indices]
+
+    # Background image
     if plot_image:
         ax.imshow(image, alpha=im_alpha)
-    
-    polys = [np.column_stack(grain.exterior.xy) for grain in all_grains]
 
-   
-    cmap_obj = plt.cm.get_cmap(cmap)
-    n = len(polys)
+    # Polygon-by-polygon drawing (required for interactivity)
+    for i in iterator:
+        poly = all_grains[i]
+        xs, ys = poly.exterior.xy
+        ax.fill(xs, ys, facecolor=colors[i], edgecolor='none', alpha=0.5)
+        ax.plot(xs, ys, color='k', linewidth=1)
 
-    if random_colors:
-        color_indices = np.random.randint(0, cmap_obj.N, n)
-        colors = cmap_obj(color_indices)
-    else:
-        colors = cmap_obj(np.linspace(0, 1, n))
-
-    
-    pc = PolyCollection(
-        polys,
-        facecolors=colors,
-        edgecolors='k',
-        linewidths=0.7,
-        alpha=0.5,
-    )
-    ax.add_collection(pc)
-
-    # --- Axes cleanup ---
-    ax.set_xlim(0, image.shape[1])
-    ax.set_ylim(image.shape[0], 0)
+    # Restore original axes behavior
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.set_xlim(0, image.shape[1])
+    ax.set_ylim(image.shape[0], 0)
 
     return ax
+
 from pathlib import Path
 
 
@@ -109,93 +113,87 @@ import matplotlib.pyplot as plt
 def plot_grains(
     image_or_path,
     all_grains,
-    step="initial",
-    cmap="viridis",
+    step,
+    cmap='Paired',
     figsize=(15, 10),
-    save=False,
-    save_name=None,
-    save_dir=".",
+    save=True,
     show=True,
     dpi=300,
-    random_colors=False,
+    random_colors=True,
+    use_tqdm=False,
+    save_name=None,
+    save_dir="."
 ):
     """
-    Plot grains on either:
-      • an image array (e.g., image_pred), OR
-      • an image file path.
-
-    If save=True, saves to either:
-      • the same directory as the input file, OR
-      • save_dir if using an image array.
+    EXACT original behavior but supports:
+    - array OR filepath input
+    - optional saving
+    - optional custom save directory/name
     """
 
-    # --- Determine whether input is a path or array ---
+    # Handle input type
     if isinstance(image_or_path, (str, Path)):
-        # It's a filepath
         fname = Path(image_or_path)
-        image = np.asarray(load_img(fname))
+        image = np.array(load_img(fname))
         base_name = fname.stem
         default_save_dir = fname.parent
     else:
-        # Assume it's a NumPy array
         image = np.asarray(image_or_path)
         fname = None
         base_name = "segmentation_output"
         default_save_dir = Path(save_dir)
 
-    # --- Create figure ---
+    # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
+    # Use restored exact behavior
     plot_image_w_colorful_grains(
         image,
         all_grains,
         ax=ax,
         cmap=cmap,
-        random_colors=random_colors,
+        use_tqdm=use_tqdm,
     )
 
-    ax.set_aspect("equal")
+    ax.axis("equal")
     fig.tight_layout()
 
-    # --- Saving logic ---
+    # File naming logic (original behavior preserved)
+    suffix_map = {
+        'initial': '_Initialoutput.png',
+        'deletions': '_after_initial_deletions.png',
+        'initial deletions': '_after_initial_deletions.png',
+        'after deleting': '_after_initial_deletions.png',
+        'additions': '_after_initial_additions.png',
+        'after additions': '_after_initial_additions.png',
+        'final': '_final.png',
+        'completed': '_final.png'
+    }
+    step_key = step.lower()
+    if step_key not in suffix_map:
+        raise ValueError(f"Invalid step: {step}")
+
+    suffix = suffix_map[step_key]
+
+    # Determine save path
     if save:
-
-        # Create suffix based on step
-        suffix_map = {
-            'initial': '_Initialoutput.png',
-            'deletions': '_after_initial_deletions.png',
-            'initial deletions': '_after_initial_deletions.png',
-            'after deleting': '_after_initial_deletions.png',
-            'additions': '_after_initial_additions.png',
-            'after additions': '_after_initial_additions.png',
-            'final': '_final.png',
-            'completed': '_final.png'
-        }
-
-        step_key = step.lower()
-        if step_key not in suffix_map:
-            raise ValueError(f"Invalid step: {step}")
-
-        suffix = suffix_map[step_key]
-
-        # If user provided a custom name → use it
-        if save_name is not None:
+        if save_name:
             filename = f"{save_name}.png"
         else:
             filename = f"{base_name}{suffix}"
 
         save_path = default_save_dir / filename
+        fig.savefig(save_path, bbox_inches='tight', dpi=dpi)
+        print(f"✔ Saved: {save_path}")
 
-        fig.savefig(save_path, bbox_inches="tight", dpi=dpi)
-        print(f"💾 Saved figure to: {save_path}")
-
-    # --- Show or close ---
+    # Show or close
     if show:
         plt.show()
     else:
         plt.close(fig)
 
     return fig, ax
+
 
 
 
