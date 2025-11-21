@@ -58,7 +58,7 @@ def plot_image_w_colorful_grains(
     use_tqdm=False,
 ):
     """
-    EXACT original behavior:
+    Plot segmented zircons with random colorful images:
     - random color selection from colormap
     - polygon-by-polygon plotting
     - 0.5 alpha
@@ -125,7 +125,7 @@ def plot_grains(
     save_dir="."
 ):
     """
-    EXACT original behavior but supports:
+    Plotting segmented grains on original image.
     - array OR filepath input
     - optional saving
     - optional custom save directory/name
