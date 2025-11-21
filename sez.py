@@ -43,82 +43,129 @@ from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
 
 
 
-def plot_image_w_colorful_grains(image, all_grains, ax, cmap='viridis', plot_image=True, im_alpha=1.0):
-    """Plotting segmentation image with colorful zircon grains. From Sylvester et. al's segmenteverygrain
-    Parameters
-    ----------
-    image : numpy.ndarray
-        The input image to be plotted.
-    all_grains : list
-        A list of shapely Polygon objects representing the grain masks.
-    ax : matplotlib.axes.Axes
-        The axes object on which to plot the image and grain masks.
-    cmap : str, optional
-        The name of the colormap to use for coloring the grain masks. Default is 'viridis'.
-    plot_image : bool, optional
-        Whether to plot the image. Default is True.
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import PolyCollection
 
-    Returns
-    -------
-    None
+
+def plot_image_w_colorful_grains(
+    image,
+    all_grains,
+    ax=None,
+    cmap='viridis',
+    plot_image=True,
+    im_alpha=1.0,
+    random_colors=False,
+):
     """
-    cmap = plt.cm.get_cmap(cmap)
-    num_colors = len(all_grains)
-    color_indices = np.random.randint(0, cmap.N, num_colors)
-    colors = [cmap(i) for i in color_indices]
+    Fast plotting of grain polygons over an image using PolyCollection.
+    """
 
+    # --- Axes handling ---
+    if ax is None:
+        _, ax = plt.subplots()
+
+   
     if plot_image:
         ax.imshow(image, alpha=im_alpha)
+    
+    polys = [np.column_stack(grain.exterior.xy) for grain in all_grains]
 
-    for i in trange(len(all_grains)):
-        color = colors[i]
-        poly = all_grains[i]
-        ax.fill(poly.exterior.xy[0], poly.exterior.xy[1], facecolor=color, edgecolor='none', alpha=0.5)
-        ax.plot(poly.exterior.xy[0], poly.exterior.xy[1], color='k', linewidth=1)
+   
+    cmap_obj = plt.cm.get_cmap(cmap)
+    n = len(polys)
 
-    ax.set_xticks([])
-    ax.set_yticks([])
+    if random_colors:
+        color_indices = np.random.randint(0, cmap_obj.N, n)
+        colors = cmap_obj(color_indices)
+    else:
+        colors = cmap_obj(np.linspace(0, 1, n))
+
+    
+    pc = PolyCollection(
+        polys,
+        facecolors=colors,
+        edgecolors='k',
+        linewidths=0.7,
+        alpha=0.5,
+    )
+    ax.add_collection(pc)
+
+    # --- Axes cleanup ---
     ax.set_xlim(0, image.shape[1])
     ax.set_ylim(image.shape[0], 0)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    return ax
+from pathlib import Path
 
 
-def plot_grains(fname, all_grains, step, cmap='Paired', figsize=(15, 10),
-                save=True, show=True, dpi=300):
-   
+def plot_grains(
+    fname,
+    all_grains,
+    step,
+    cmap='Paired',
+    figsize=(15, 10),
+    save=True,
+    show=True,
+    dpi=300,
+    random_colors=False,
+):
+    """
+    Load image, overlay grain polygons, and save/display the figure.
+    Fully optimized version.
+    """
 
     fname = Path(fname)
-    image = np.array(load_img(fname))
+    image = np.asarray(load_img(fname))
 
+    # --- Create figure ---
     fig, ax = plt.subplots(figsize=figsize)
 
-    plot_image_w_colorful_grains(image, all_grains, ax=ax, cmap=cmap)
+    # --- Use optimized fast plotter ---
+    plot_image_w_colorful_grains(
+        image,
+        all_grains,
+        ax=ax,
+        cmap=cmap,
+        random_colors=random_colors,
+    )
 
-    ax.axis('equal')
-
-    step_lower = step.lower()
-    if step_lower == 'initial':
-        save_path = fname.with_name(fname.stem + '_Initialoutput.png')
-    elif step_lower in ['deletions', 'initial deletions', 'after deleting']:
-        save_path = fname.with_name(fname.stem + '_after_initial_deletions.png')
-    elif step_lower in ['additions', 'after additions']:
-        save_path = fname.with_name(fname.stem + '_after_initial_additions.png')
-    elif step_lower in ['final', 'completed']:
-        save_path = fname.with_name(fname.stem + '_final.png')
-    else:
-        print('Error: please specify a valid step.')
-        plt.close(fig)
-        return
-
+    ax.set_aspect("equal")
     fig.tight_layout()
 
+    step_map = {
+        'initial': '_Initialoutput.png',
+        'deletions': '_after_initial_deletions.png',
+        'initial deletions': '_after_initial_deletions.png',
+        'after deleting': '_after_initial_deletions.png',
+        'additions': '_after_initial_additions.png',
+        'after additions': '_after_initial_additions.png',
+        'final': '_final.png',
+        'completed': '_final.png'
+    }
+
+    step_key = step.lower()
+    if step_key not in step_map:
+        raise ValueError(
+            f"Invalid step: '{step}'. Must be one of:\n{list(step_map.keys())}"
+        )
+
+    save_path = fname.with_name(fname.stem + step_map[step_key])
+
+    # --- Save / show ---
     if save:
-        plt.savefig(save_path, bbox_inches='tight', dpi=dpi)
+        fig.savefig(save_path, bbox_inches='tight', dpi=dpi)
         print(f"✅ Figure saved to: {save_path}")
 
     if show:
         plt.show()
     else:
         plt.close(fig)
+
+    return fig, ax
+
 
 
 
