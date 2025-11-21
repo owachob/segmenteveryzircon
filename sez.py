@@ -546,3 +546,78 @@ def plot_spots_on_image(image, df):
     # Convert image from BGR (OpenCV) to RGB (for Matplotlib)
     image_rgb = cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)
     return image_rgb
+
+def predict_large_image(fname, model, sam, min_area, patch_size=2000, overlap=300, remove_large_objects=False):
+    """
+    Predicts the location of grains in a large image using a patch-based approach.
+
+    Parameters
+    ----------
+    fname : str
+        The file path of the input image.
+    model : tensorflow.keras.Model
+        The Unet model used for the preliminary grain prediction.
+    sam : SamPredictor
+        The SAM model used for grain segmentation.
+    min_area : int
+        The minimum area threshold for valid grains.
+    patch_size : int, optional
+        The size of each patch. Defaults to 2000.
+    overlap : int, optional
+        The overlap between patches. Defaults to 300.
+    remove_large_objects : bool, optional
+        Whether to remove large objects from the segmentation. Defaults to False.
+
+    Returns
+    -------
+    All_Grains : list
+        A list of grains represented as polygons.
+    image_pred : numpy.ndarray
+        The Unet predictions for the entire image.
+    """
+    step_size = patch_size - overlap  # step size for overlapping patches
+    image = np.array(load_img(fname))
+    img_height, img_width = image.shape[:2]  # get the height and width of the image 
+    # loop over the image and extract patches:
+    All_Grains = []
+    all_coords = np.empty((0, 2), dtype=np.float32)
+    total_patches = ((img_height - patch_size + step_size) // step_size + 1) * ((img_width - patch_size + step_size) // step_size + 1)
+    # Initialize an array to store the Unet predictions for the entire image
+    image_pred = np.zeros((img_height, img_width, 3), dtype=np.float32)
+
+    for i in range(0, img_height - patch_size + step_size + 1, step_size):
+        for j in range(0, img_width - patch_size + step_size + 1, step_size):
+            patch = image[i:min(i + patch_size, img_height), j:min(j + patch_size, img_width)]
+            patch_pred = seg.predict_image(patch, model, I=256) # use the Unet model to predict the mask on the patch
+            
+            # Define the weights for blending the overlapping regions
+            weights = np.ones_like(patch_pred)
+            if i > 0:
+                weights[:overlap, :] *= np.linspace(0, 1, overlap)[:, None, None]
+            if j > 0:
+                weights[:, :overlap] *= np.linspace(0, 1, overlap)[None, :, None]
+            if i + patch_size < img_height:
+                weights[-overlap:, :] *= np.linspace(1, 0, overlap)[:, None, None]
+            if j + patch_size < img_width:
+                weights[:, -overlap:] *= np.linspace(1, 0, overlap)[None, :, None]
+
+            # Update image_pred with the weighted sum
+            image_pred[i:min(i + patch_size, img_height), j:min(j + patch_size, img_width)] += patch_pred * weights
+            labels, coords = seg.label_grains(patch, patch_pred, dbs_max_dist=20.0)
+            if len(coords) > 0: # run the SAM algorithm only if there are grains in the patch
+                all_grains, labels, mask_all, grain_data, fig, ax = seg.sam_segmentation(sam, patch, patch_pred, coords, labels, \
+                                    min_area=min_area, plot_image=False, remove_edge_grains=True, remove_large_objects=remove_large_objects)
+                for grain in all_grains:
+                    All_Grains += [translate(grain, xoff=j, yoff=i)] # translate the grains to the original image coordinates
+            patch_num = i//step_size*((img_width - patch_size + step_size)//step_size + 1) + j//step_size + 1
+            if len(coords) > 0:
+                coords[:,0] = coords[:,0] + j
+                coords[:,1] = coords[:,1] + i
+                if patch_num > 1:
+                    all_coords = np.vstack((all_coords, coords))
+                else:
+                    all_coords = coords.copy()
+            print(f"processed patch #{patch_num} out of {total_patches} patches")
+    new_grains, comps, g = seg.find_connected_components(All_Grains, min_area)
+    All_Grains = seg.merge_overlapping_polygons(All_Grains, new_grains, comps, min_area, patch_pred)
+    return All_Grains, image_pred, all_coords
