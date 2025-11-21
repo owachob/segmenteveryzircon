@@ -101,29 +101,51 @@ def plot_image_w_colorful_grains(
 from pathlib import Path
 
 
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 def plot_grains(
-    fname,
+    image_or_path,
     all_grains,
-    step,
-    cmap='Paired',
+    step="initial",
+    cmap="viridis",
     figsize=(15, 10),
-    save=True,
+    save=False,
+    save_name=None,
+    save_dir=".",
     show=True,
     dpi=300,
     random_colors=False,
 ):
     """
-    Load image, overlay grain polygons, and save/display the figure.
-    Fully optimized version.
+    Plot grains on either:
+      • an image array (e.g., image_pred), OR
+      • an image file path.
+
+    If save=True, saves to either:
+      • the same directory as the input file, OR
+      • save_dir if using an image array.
     """
 
-    fname = Path(fname)
-    image = np.asarray(load_img(fname))
+    # --- Determine whether input is a path or array ---
+    if isinstance(image_or_path, (str, Path)):
+        # It's a filepath
+        fname = Path(image_or_path)
+        image = np.asarray(load_img(fname))
+        base_name = fname.stem
+        default_save_dir = fname.parent
+    else:
+        # Assume it's a NumPy array
+        image = np.asarray(image_or_path)
+        fname = None
+        base_name = "segmentation_output"
+        default_save_dir = Path(save_dir)
 
     # --- Create figure ---
     fig, ax = plt.subplots(figsize=figsize)
 
-    # --- Use optimized fast plotter ---
     plot_image_w_colorful_grains(
         image,
         all_grains,
@@ -135,36 +157,46 @@ def plot_grains(
     ax.set_aspect("equal")
     fig.tight_layout()
 
-    step_map = {
-        'initial': '_Initialoutput.png',
-        'deletions': '_after_initial_deletions.png',
-        'initial deletions': '_after_initial_deletions.png',
-        'after deleting': '_after_initial_deletions.png',
-        'additions': '_after_initial_additions.png',
-        'after additions': '_after_initial_additions.png',
-        'final': '_final.png',
-        'completed': '_final.png'
-    }
-
-    step_key = step.lower()
-    if step_key not in step_map:
-        raise ValueError(
-            f"Invalid step: '{step}'. Must be one of:\n{list(step_map.keys())}"
-        )
-
-    save_path = fname.with_name(fname.stem + step_map[step_key])
-
-    # --- Save / show ---
+    # --- Saving logic ---
     if save:
-        fig.savefig(save_path, bbox_inches='tight', dpi=dpi)
-        print(f"✅ Figure saved to: {save_path}")
 
+        # Create suffix based on step
+        suffix_map = {
+            'initial': '_Initialoutput.png',
+            'deletions': '_after_initial_deletions.png',
+            'initial deletions': '_after_initial_deletions.png',
+            'after deleting': '_after_initial_deletions.png',
+            'additions': '_after_initial_additions.png',
+            'after additions': '_after_initial_additions.png',
+            'final': '_final.png',
+            'completed': '_final.png'
+        }
+
+        step_key = step.lower()
+        if step_key not in suffix_map:
+            raise ValueError(f"Invalid step: {step}")
+
+        suffix = suffix_map[step_key]
+
+        # If user provided a custom name → use it
+        if save_name is not None:
+            filename = f"{save_name}.png"
+        else:
+            filename = f"{base_name}{suffix}"
+
+        save_path = default_save_dir / filename
+
+        fig.savefig(save_path, bbox_inches="tight", dpi=dpi)
+        print(f"💾 Saved figure to: {save_path}")
+
+    # --- Show or close ---
     if show:
         plt.show()
     else:
         plt.close(fig)
 
     return fig, ax
+
 
 
 
