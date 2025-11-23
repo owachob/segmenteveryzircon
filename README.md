@@ -56,7 +56,12 @@ conda activate segmenteveryzircon
 
 To begin creating grain polygons from images, see the [1_create_polygons_and_masks.ipynb](https://github.com/owachob/segmenteveryzircon/blob/main/1_create_polygons_and_masks.ipynb) notebook to see how to use the model and interact with the initial model output.
 
+For extracting morphometric information from the segmented grains, see the [2_morphometrics.ipynb](https://github.com/owachob/segmenteveryzircon/blob/main/2_morphometrics.ipynb) notebook. 
+
+If you have already acquired U-Pb ages via LA-ICP-MS, you can combine the isotopic age information with the grain shape data using the [3_combining_isotopic_age_data.ipynb], if you have information regarding what grain corresponds to which spot (usually via a .scancsv file or an annotated image from the laser). This notebook will continue to be updated to provide enhanced versatility. 
+
 Segmentation run time will be dependent upon image size and computer resources. Please consider [downsampling](https://visionbook.mit.edu/upsamplig_downsampling_2.html) images. 
+
 
 ## Acknowledgements
 
