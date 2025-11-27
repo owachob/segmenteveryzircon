@@ -429,7 +429,7 @@ def convert_grain_units(grain_data, units_per_pixel):
 
     return grain_data
 
-def show_grain_overlay(grain_ID, grain_data, label_image, original_image, pad=50):
+def show_grain_overlay(grain_ID, grain_data, label_image, original_image_path, pad=50):
     """
     Display a zoomed-in overlay of a single grain on the original image.
 
@@ -441,20 +441,20 @@ def show_grain_overlay(grain_ID, grain_data, label_image, original_image, pad=50
         DataFrame containing grain properties, including bounding boxes.
     label_image : np.ndarray
         Labeled image where each pixel has a grain ID.
-    original_image : np.ndarray
-        Original RGB or grayscale image.
+    original_image_path : str
+        Path to original image file location.
     pad : int, optional
         Number of pixels to pad around the grain bounding box.
     """
     row = grain_data[grain_data['label'] == grain_ID].iloc[0]
     min_row, min_col = int(row['bbox-0']), int(row['bbox-1'])
     max_row, max_col = int(row['bbox-2']), int(row['bbox-3'])
-
+    original_image = cv2.imread(original_image_path)
     # Expand bounding box
     min_row = max(min_row - pad, 0)
     min_col = max(min_col - pad, 0)
-    max_row = min(max_row + pad, original_image.shape[0])
-    max_col = min(max_col + pad, original_image.shape[1])
+    max_row = min(max_row + pad, original_image_path.shape[0])
+    max_col = min(max_col + pad, original_image_path.shape[1])
 
     # Create binary mask for this grain
     label_crop = label_image[min_row:max_row, min_col:max_col]
@@ -621,3 +621,47 @@ def predict_large_image(fname, model, sam, min_area, patch_size=2000, overlap=30
     new_grains, comps, g = seg.find_connected_components(All_Grains, min_area)
     All_Grains = seg.merge_overlapping_polygons(All_Grains, new_grains, comps, min_area, patch_pred)
     return All_Grains, image_pred, all_coords
+
+
+def rasterize_grains(original_image_path, csv_path, crs="EPSG:4326", dtype=np.uint16):
+    """
+    Load polygons from CSV, rasterize them to match the original image size,
+    and return a label image along with the GeoDataFrame.
+
+    Parameters
+    ----------
+    original_image_path : str
+        Path to the original image.
+    csv_path : str
+        Path to the CSV file containing polygon coordinates.
+    crs : str
+        Coordinate reference system of the input polygons.
+    dtype : np.dtype
+        Data type for the output label raster.
+
+    Returns
+    -------
+    label_image : np.ndarray
+        A 2D numpy array where each pixel contains the polygon label integer.
+    gdf : geopandas.GeoDataFrame
+        The loaded polygon data.
+    all_grains : list
+        A list of all of the polygon coordinates that have been loaded.
+    """
+    
+    original_image = cv2.imread(original_image_path)
+    height, width = original_image.shape[:2]
+    gdf = load_polygons(csv_path, crs=crs)
+    shapes = ((geom, idx + 1) for idx, geom in enumerate(gdf.geometry))
+    label_image = rasterize(
+        shapes=shapes,
+        out_shape=(height, width),
+        fill=0,
+        dtype=dtype
+    )
+    all_grains = list(gdf.geometry)
+    print(f"Rasterized label image shape: {label_image.shape}")
+    print(f"Number of polygons: {len(gdf)}")
+    print(f"Max label value in raster: {label_image.max()}")
+
+    return label_image, gdf, all_grains
