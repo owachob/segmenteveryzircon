@@ -39,7 +39,8 @@ import segmenteverygrain as seg
 from segment_anything import SamPredictor
 from shapely import wkt
 from shapely.affinity import translate
-from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
+from shapely.geometry import MultiPolygon, Point, Polygon, LineString, mapping, shape
+from shapely.ops import split
 
 
 
@@ -101,14 +102,6 @@ def plot_image_w_colorful_grains(
     ax.set_ylim(image.shape[0], 0)
 
     return ax
-
-from pathlib import Path
-
-
-from pathlib import Path
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 def plot_grains(
     image_or_path,
@@ -195,10 +188,6 @@ def plot_grains(
     return fig, ax
 
 
-
-
-
-
 def load_polygons(csv_path, crs=None):
     """
     Load a CSV file containing WKT geometries and convert it to a GeoDataFrame.
@@ -263,7 +252,6 @@ def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
     formats outside of .png.
 
     Parameters
-    ----------
     image_dir : str
         Directory containing the image files.
     mask_dir : str
@@ -272,7 +260,6 @@ def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
         If True, applies data augmentation to the training dataset (default is True).
 
     Returns
-    -------
     train_dataset : tf.data.Dataset
         TensorFlow dataset for training.
     val_dataset : tf.data.Dataset
@@ -296,8 +283,6 @@ def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
     image_files = sorted(image_files)
     mask_files = sorted(mask_files)
 
-    # --- Match images and masks by base filename ---
-
     image_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
     mask_map  = {os.path.splitext(os.path.basename(f))[0]: f for f in mask_files}
 
@@ -312,9 +297,6 @@ def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
 
     print(f"Matched {len(image_files)} image/mask pairs.")
 
-    # ----------------------
-    #   Train/Val/Test split
-    # ----------------------
     batch_size = 32
     shuffle_buffer_size = 1000
 
@@ -331,10 +313,6 @@ def create_train_val_test_data(image_dir, mask_dir, augmentation=True):
         test_size=0.25,
         random_state=42
     )
-
-    # ----------------------
-    #   Build TF datasets
-    # ----------------------
     if not augmentation:
         train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_masks))
     else:
@@ -374,11 +352,13 @@ def grains_to_geodataframe(image_fname, all_grains):
     based on the raster's transform, returning a GeoDataFrame.
 
     Parameters:
-    - image_fname: str, path to the raster image
-    - all_grains: list of shapely Polygon objects in image coordinates
-
+    image_fname: str
+        path to the raster image
+    all_grains: list 
+        image coordinates of all Shapely grain polygons
     Returns:
-    - gdf: GeoDataFrame with projected polygons
+    gdf: GeoDataFrame 
+        projected polygons
     """
     dataset = rasterio.open(image_fname)
     projected_polys = []
@@ -398,14 +378,12 @@ def convert_grain_units(grain_data, units_per_pixel):
     Convert grain measurement columns from pixels to microns (or nanometers or millimeters).
 
     Parameters
-    ----------
     grain_data : pandas.DataFrame
         DataFrame containing grain properties.
     units_per_pixel : float
         Conversion factor from pixels to microns.
 
     Returns
-    -------
     pandas.DataFrame
         DataFrame with additional columns converted to microns.
     """
@@ -434,7 +412,6 @@ def show_grain_overlay(grain_ID, grain_data, label_image, original_image_path, p
     Display a zoomed-in overlay of a single grain on the original image.
 
     Parameters
-    ----------
     grain_ID : int
         The label ID of the grain to display.
     grain_data : pandas.DataFrame
@@ -482,12 +459,10 @@ def load_scancsv(csv_file):
     Returns a DataFrame with the necessary information.
     
     Parameters
-    ----------
     csv_file: str
         Path to scancsv file.
     
     Returns
-    ----------
     df: pandas.DataFrame
         Dataframe of the scancsv file.
 
@@ -504,12 +479,10 @@ def load_image_post_ablation(image_file):
     Load the image you used for the segmentation.
     
     Parameters
-    ----------
     image_file: str
         Path of image file.
     
     Returns
-    ----------
     image: 
         loaded image of the path that was specified.
     """
@@ -521,13 +494,11 @@ def plot_spots_on_image(image, df):
     Plot the spots from the scancsv file coordinates on the image as a starting point with red dots.
     
     Parameters
-    ----------
     image: 
         Loaded image.
     df: pandas.DataFrame
         dataframe containing the ablation coordinates from the scancsv file. 
     Returns
-    ----------
     image_rgb: 
         loaded image of the path that was specified in RGB.
     """
@@ -552,7 +523,6 @@ def predict_large_image(fname, model, sam, min_area, patch_size=2000, overlap=30
     Predicts the location of grains in a large image using a patch-based approach.
 
     Parameters
-    ----------
     fname : str
         The file path of the input image.
     model : tensorflow.keras.Model
@@ -569,7 +539,6 @@ def predict_large_image(fname, model, sam, min_area, patch_size=2000, overlap=30
         Whether to remove large objects from the segmentation. Defaults to False.
 
     Returns
-    -------
     All_Grains : list
         A list of grains represented as polygons.
     image_pred : numpy.ndarray
@@ -629,7 +598,6 @@ def rasterize_grains(original_image_path, csv_path, crs="EPSG:4326", dtype=np.ui
     and return a label image along with the GeoDataFrame.
 
     Parameters
-    ----------
     original_image_path : str
         Path to the original image.
     csv_path : str
@@ -640,7 +608,6 @@ def rasterize_grains(original_image_path, csv_path, crs="EPSG:4326", dtype=np.ui
         Data type for the output label raster.
 
     Returns
-    -------
     label_image : np.ndarray
         A 2D numpy array where each pixel contains the polygon label integer.
     gdf : geopandas.GeoDataFrame
@@ -665,3 +632,254 @@ def rasterize_grains(original_image_path, csv_path, crs="EPSG:4326", dtype=np.ui
     print(f"Max label value in raster: {label_image.max()}")
 
     return label_image, gdf, all_grains
+
+def get_plotting_state():
+    '''
+    Creating a dictionary that stores the interactive grain plotting state.
+    Parameters:
+        - None
+    Returns:
+        - Dictionary of plotting state.    
+    '''
+    if not hasattr(get_plotting_state, "state"):
+        get_plotting_state.state = {
+            "coords": [],       
+            "mode": "none",     
+            "mode_text": None,  
+            "split": {
+                "active": False,
+                "points": [],
+                "start_point": None,
+                "temp_line": None,
+                "backup": None
+            }
+        }
+    return get_plotting_state.state
+
+
+def update_mode_text(ax, text):
+    """
+    Updates the text in the upper left corner of the figure when interactively
+    plotting. It is used to show which current interaction mode the user is in.
+    
+    Parameters
+    ax: matplotlib.axes.Axes
+        The axes on which the mode indicator text should appear.
+    text: str
+        The string to display based on the interaction state.
+    
+    Returns
+    None
+    """
+    if hasattr(ax, "mode_text"):
+        ax.mode_text.set_text(text)
+    else:
+        ax.mode_text = ax.text(
+            0.01, 0.99, text, transform=ax.transAxes,
+            fontsize=12, color='r', va='top', ha='left',
+            bbox=dict(facecolor='white', alpha=0.6)
+        )
+    ax.figure.canvas.draw_idle()
+
+def unified_key(event, ax, fig, all_grains, grain_inds):
+    """
+    Handle all keyboard interactions for the interactive segmentation
+    GUI. Updates the global plotting state. The modes are: ADD, DELETE,
+    SPLIT, and UNDO.
+
+    Parameters:
+    event: matplotlib.backend_bases.KeyEvent
+        The key press event generated by matplotlib.
+    ax: matplotlib.axes.Axes
+        The axes on which segmentation polygons and mode indicators are 
+        drawn an updated.
+    fig: matplotlib.figure.Figure
+        The figure used for drawing updates after mode changes,
+        splits, and undo operation.
+    all_grains: list
+        list of all Shapely polygon grain objects.
+    grain_inds: list
+        list of segmented grain indexes
+
+    Returns:
+    None
+    """
+    state = get_plotting_state()
+    split_state = state["split"]
+
+    def reset_split():
+        split_state["active"] = False
+        split_state["points"] = []
+        split_state["start_point"] = None
+        split_state["backup"] = None
+
+        if split_state["temp_line"]:
+            try: split_state["temp_line"].remove()
+            except: pass
+            split_state["temp_line"] = None
+
+    key = event.key.lower()
+    if key == 'k':
+        if split_state["temp_line"] is not None:
+            try:
+                split_state["temp_line"].remove()
+            except:
+                pass
+            split_state["temp_line"] = None
+        reset_split()
+        state["mode"] = "split"
+        split_state["active"] = True
+        update_mode_text(ax, "SPLIT MODE: left-click points, right-click to finish")
+        return
+    if key == 'd':
+        reset_split()
+        state["mode"] = "delete"
+        update_mode_text(ax, "DELETE MODE")
+        print("Delete mode ON")
+        seg.onpress2(event, all_grains, grain_inds, fig, ax)
+        return
+    if key == 'a':
+        reset_split()
+        state["mode"] = "add"
+        update_mode_text(ax, "ADD MODE")
+        print("Add mode ON")
+        seg.onpress(event, ax, fig)
+        return
+    if key == 'u':
+        if split_state["backup"]:
+            old_patch, old_poly = split_state["backup"]
+            for p in list(ax.patches):
+                if p is not old_patch:
+                    try: p.remove()
+                    except: pass
+            x,y = old_poly.exterior.xy
+            ax.fill(x, y, facecolor=[0.7,0.7,0.7,0.6], edgecolor='k')
+            split_state["backup"] = None
+            fig.canvas.draw()
+            print("Undo complete")
+        return
+    seg.onpress(event, ax, fig)
+    seg.onpress2(event, all_grains, grain_inds, fig, ax)
+
+
+def unified_click(event, ax, image, predictor, all_grains, grain_inds):
+    """
+    Handle all mouse clicks for the interactive segmentation GUI.
+
+    Parameters:
+    event: matplotlib.backend_bases.KeyEvent
+        The key press event generated by matplotlib.
+    ax: matplotlib.axes.Axes
+        The axes on which segmentation polygons and mode indicators are 
+        drawn an updated.
+    image: matplotlib.figure.Figure
+        The figure used for drawing updates after mode changes,
+        splits, and undo operation.
+    predictor:
+        SAM predictor.
+    all_grains: list
+        list of all Shapely polygon grain objects.
+    grain_inds: list
+        list of segmented grain indexes
+
+    Returns:
+    None
+    """
+    
+
+    if event.xdata is None or event.ydata is None:
+        return
+
+    state = get_plotting_state()
+    split_state = state["split"]
+    mode = state["mode"]
+
+    if split_state["active"] and mode == "split":
+        if event.button == 1:
+            if split_state["start_point"] is None:
+                split_state["start_point"] = (event.xdata, event.ydata)
+                split_state["points"] = [split_state["start_point"]]
+            else:
+                split_state["points"].append((event.xdata, event.ydata))
+
+            if len(split_state["points"]) >= 2:
+                if split_state["temp_line"]:
+                    try: split_state["temp_line"].remove()
+                    except: pass
+
+                xs, ys = zip(*split_state["points"])
+                split_state["temp_line"], = ax.plot(xs, ys, 'y--', lw=2)
+
+            ax.figure.canvas.draw_idle()
+            return
+
+        elif event.button == 3:
+            pts = split_state["points"]
+            pts = [(x,y) for (x,y) in pts if x is not None and y is not None]
+
+            if len(pts) < 2:
+                print("Need at least 2 points to split.")
+                return
+
+
+            x0,y0 = pts[0]
+            x1,y1 = pts[-1]
+            dx = (x1-x0)*0.2 + 1e-6
+            dy = (y1-y0)*0.2 + 1e-6
+            line = LineString([(x0-dx, y0-dy)] + pts[1:-1] + [(x1+dx, y1+dy)])
+
+        
+            intersecting = []
+            for patch in ax.patches:
+                poly = Polygon(patch.get_path().vertices)
+                if poly.intersects(line):
+                    intersecting.append((patch, poly))
+
+            if intersecting:
+                closest_patch, original_poly = intersecting[0]
+
+                pieces = split(original_poly, line)
+                polys = [g for g in pieces.geoms if isinstance(g, Polygon)]
+                if len(polys) > 1:
+                    split_state["backup"] = (closest_patch, original_poly)
+                    closest_patch.remove()
+
+                    for geom in polys:
+                        x,y = geom.exterior.xy
+                        col = np.concatenate([np.random.random(3), [0.6]])
+                        ax.fill(x, y, facecolor=col, edgecolor='k')
+                    print("Split performed")
+            
+            split_state["active"] = False
+            split_state["points"] = []
+            split_state["start_point"] = None
+
+            if split_state["temp_line"]:
+                try: split_state["temp_line"].remove()
+                except: pass
+                split_state["temp_line"] = None
+
+            state["mode"] = "none"
+            update_mode_text(ax, "MODE: NONE (press A, D, or K)")
+            ax.figure.canvas.draw_idle()
+            return
+    
+    if mode == "delete" and event.button == 1:
+        x, y = event.xdata, event.ydata
+        for patch in list(ax.patches):
+            poly = Polygon(patch.get_path().vertices)
+            if poly.contains(Point(x, y)):
+                patch.remove()
+                ax.figure.canvas.draw_idle()
+                print("Grain deleted")
+                break
+        return
+    if mode == "add":
+        if event.button == 1:
+            seg.onclick_large_image(event, ax, state["coords"], image, predictor)
+        elif event.button == 3:
+            seg.onclick2(event, all_grains, grain_inds, ax)
+        ax.figure.canvas.draw_idle()
+        return
+
+
