@@ -797,6 +797,7 @@ def unified_click(event, ax, image, predictor, all_grains, grain_inds):
     - Split mode: left-click adds points, right-click finalizes the split
     - Delete mode: left-click deletes a grain
     - Add mode: left/right click delegated to segmentation module
+    - Invisible mode: toggle key to remove segmentation layer to see original image.
 
     Parameters:
     event: matplotlib.backend_bases.KeyEvent
@@ -894,7 +895,7 @@ def unified_click(event, ax, image, predictor, all_grains, grain_inds):
                 split_state["temp_line"] = None
 
             state["mode"] = "none"
-            update_mode_text(ax, "MODE: NONE (press A, D, or K)")
+            update_mode_text(ax, "MODE: NONE (press A, D, or I)")
             ax.figure.canvas.draw_idle()
             return
         
